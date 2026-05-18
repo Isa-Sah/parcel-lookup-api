@@ -31,6 +31,16 @@ select:disabled{background:#f7f7f4;color:#9ca3af;cursor:not-allowed}
 .copy-btn{font-size:10px;color:#6b7280;background:#f7f7f4;border:1px solid #e5e5e0;border-radius:3px;padding:2px 7px;cursor:pointer;margin-top:4px}
 .copy-btn:hover{background:#e5e5e0}
 .copy-btn.ok{background:#d1fae5;color:#064e3b;border-color:#86efac}
+.fb{border:1px solid #e5e5e0;border-radius:4px;margin-top:10px;overflow:hidden}
+.fb-h{font-size:11px;font-weight:600;color:#374151;padding:6px 8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#f7f7f4;user-select:none}
+.fb-h:hover{background:#e5e5e0}
+.fb-b{padding:6px 8px}
+.fb-intro{font-size:10.5px;color:#6b7280;margin-bottom:7px}
+.fb-rule{border:1px solid #e5e5e0;border-radius:3px;padding:5px 7px;margin-bottom:5px;background:#fff}
+.fb-rule:last-child{margin-bottom:0}
+.fb-cat{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:2px}
+.fb-txt{font-size:10.5px;color:#111}
+.fb-txt b{font-weight:700}
 </style>
 
 <div class="pac">
@@ -52,6 +62,37 @@ select:disabled{background:#f7f7f4;color:#9ca3af;cursor:not-allowed}
   </select>
 
   <div id="pac-result"></div>
+
+  <div class="fb">
+    <div class="fb-h" onclick="var b=this.nextElementSibling,o=!b.hidden;b.hidden=o;this.querySelector('span').textContent=o?'⌄':'⌃'">
+      General fallback rules &mdash; when no specific rule matches
+      <span>&#8963;</span>
+    </div>
+    <div class="fb-b">
+      <div class="fb-intro">Most scenarios are covered by the rules above. If a parcel&rsquo;s situation isn&rsquo;t covered, apply these general rules:</div>
+      <div class="fb-rule">
+        <div class="fb-cat">Located at Sortation &middot; Non-Vinted</div>
+        <div class="fb-txt">Consider the parcel <b>lost after 21 days</b> have passed since it was scanned at Sortation.</div>
+      </div>
+      <div class="fb-rule">
+        <div class="fb-cat">Located at Sortation after drop-off &middot; Vinted</div>
+        <div class="fb-txt">Consider the parcel <b>lost after 14 days</b> have passed since the drop-off.</div>
+      </div>
+      <div class="fb-rule">
+        <div class="fb-cat">Located at PS &middot; Non-Vinted</div>
+        <div class="fb-txt">Consider the parcel <b>lost after 14 days</b> have passed after PS check-in.</div>
+      </div>
+      <div class="fb-rule">
+        <div class="fb-cat">Located at PS &middot; Vinted</div>
+        <div class="fb-txt">Consider the parcel <b>lost after 14 days</b> have passed after (original) PS drop-off.</div>
+      </div>
+      <div class="fb-rule">
+        <div class="fb-cat">Located at PS / MM / Sortation after RTS &middot; All</div>
+        <div class="fb-txt">Consider the parcel <b>lost after 14 days</b> have passed after RTS.</div>
+      </div>
+    </div>
+  </div>
+
   <div class="note">32 rules · 4 stages · 24 Nov 2025</div>
 </div>
 
