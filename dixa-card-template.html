@@ -1,0 +1,195 @@
+<!-- ============================================================
+  Parcel Auto-Closure Lookup — Dixa card template (Option A)
+  1. Deploy worker.js to Cloudflare Workers
+  2. Replace API_BASE below with your worker URL
+  3. Paste this entire file into the Dixa card "Template content" field
+  ============================================================ -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.pac{font-family:system-ui,sans-serif;font-size:11.5px;color:#111;line-height:1.4}
+.warn{background:#fef3c7;border-left:3px solid #f59e0b;padding:6px 8px;margin-bottom:10px;color:#78350f;border-radius:0 4px 4px 0;font-size:11px}
+.warn b{font-weight:700}
+select{width:100%;font-family:inherit;font-size:11px;color:#111;background:#fff;border:1px solid #d1d1ca;border-radius:4px;padding:5px 7px;margin-bottom:6px;cursor:pointer}
+select:disabled{background:#f7f7f4;color:#9ca3af;cursor:not-allowed}
+.lbl{font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;display:block}
+.stg{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#fff;background:#374151;padding:3px 7px;margin:10px 0 5px;border-radius:3px;display:inline-block}
+.rule{border:1px solid #e5e5e0;border-radius:4px;padding:6px 8px;margin-bottom:5px;background:#fff}
+.ev{color:#111;font-size:11px;margin-bottom:4px}
+.ev b{font-weight:600}
+.th{display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:600;margin-right:3px}
+.tm{background:#fef3c7;color:#92400e}
+.tl{background:#fee2d4;color:#7c2d12}
+.tc{background:#fee2e2;color:#7f1d1d}
+.tags{font-size:10.5px;color:#6b7280;margin-top:3px}
+.proc{font-size:10.5px;color:#064e3b;background:#f0fdf4;border:1px solid #86efac;border-radius:3px;padding:4px 6px;margin-top:3px}
+.proc b{font-weight:600}
+.note{font-size:10px;color:#9ca3af;margin-top:8px;text-align:right}
+.empty{font-size:11px;color:#9ca3af;text-align:center;padding:12px 8px}
+.err{font-size:11px;color:#dc2626;padding:6px 8px;background:#fef2f2;border-radius:4px;margin-top:6px}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid #e5e5e0;border-top-color:#6b7280;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.copy-btn{font-size:10px;color:#6b7280;background:#f7f7f4;border:1px solid #e5e5e0;border-radius:3px;padding:2px 7px;cursor:pointer;margin-top:4px}
+.copy-btn:hover{background:#e5e5e0}
+.copy-btn.ok{background:#d1fae5;color:#064e3b;border-color:#86efac}
+</style>
+
+<div class="pac">
+  <div class="warn">&#9888; <b>Before closing:</b> add Dixa ID to logs &amp; update status to lost.<br>Primary tag is always <b>Lost In Transit</b>.</div>
+
+  <label class="lbl" for="pac-stage">1 · Stage</label>
+  <select id="pac-stage">
+    <option value="">— Select stage —</option>
+  </select>
+
+  <label class="lbl" for="pac-state">2 · Status</label>
+  <select id="pac-state" disabled>
+    <option value="">— Pick stage first —</option>
+  </select>
+
+  <label class="lbl" for="pac-event">3 · Last event</label>
+  <select id="pac-event" disabled>
+    <option value="">— Pick status first —</option>
+  </select>
+
+  <div id="pac-result"></div>
+  <div class="note">32 rules · 4 stages · 24 Nov 2025</div>
+</div>
+
+<script>
+const API = 'https://YOUR-PROJECT.vercel.app'; // <-- replace with your Vercel deployment URL
+
+const stageSel = document.getElementById('pac-stage');
+const stateSel = document.getElementById('pac-state');
+const eventSel = document.getElementById('pac-event');
+const result   = document.getElementById('pac-result');
+
+function setLoading(sel) {
+  sel.innerHTML = '<option>Loading…</option>';
+  sel.disabled = true;
+}
+function setPlaceholder(sel, text) {
+  sel.innerHTML = '<option value="">' + text + '</option>';
+  sel.disabled = true;
+}
+function fillSelect(sel, items, placeholder) {
+  sel.innerHTML = '<option value="">' + placeholder + '</option>';
+  items.forEach(i => {
+    const o = document.createElement('option');
+    o.value = i.value; o.textContent = i.label;
+    sel.appendChild(o);
+  });
+  sel.disabled = false;
+}
+
+async function get(path) {
+  const r = await fetch(API + path);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+function pillClass(s) {
+  if (s === 'missing') return 'tm';
+  if (s === 'lost')    return 'tl';
+  return 'tc';
+}
+function pillLabel(s) {
+  if (s === 'missing') return 'Missing';
+  if (s === 'lost')    return 'Lost';
+  return 'Cleanup';
+}
+
+function renderRules(rules) {
+  if (!rules.length) {
+    result.innerHTML = '<div class="empty">No specific rule matches — apply general fallback rules.</div>';
+    return;
+  }
+
+  const procs = rules.filter(r => r.kind === 'procedure');
+  const outs  = rules.filter(r => r.kind !== 'procedure').sort((a, b) => a.days - b.days);
+  let html = '';
+
+  procs.forEach(r => {
+    const steps = r.steps.map(s =>
+      '<div class="proc"><b>' + s.day_label + ':</b> ' + s.action.replace(/<[^>]+>/g,'') + '</div>'
+    ).join('');
+    html += steps;
+    if (r.primary) {
+      const copy = 'Primary: ' + r.primary + ' · Secondary: ' + r.secondary + ' · Tertiary: ' + r.tertiary;
+      html += '<div class="tags">Tags: ' + r.primary + ' / ' + r.secondary + ' / ' + r.tertiary + '</div>'
+             + '<button class="copy-btn" data-c="' + copy + '">Copy tags</button>';
+    }
+  });
+
+  if (outs.length) {
+    html += '<div class="rule">';
+    html += '<div class="ev"><b>' + outs[0].state_display + '</b> &middot; ' + outs[0].event_display + '</div>';
+    outs.forEach(r => {
+      html += '<span class="th ' + pillClass(r.new_state) + '">Day ' + r.days + ' &rarr; ' + pillLabel(r.new_state) + '</span>';
+    });
+    if (outs[0].secondary || outs[0].tertiary) {
+      html += '<div class="tags">' + (outs[0].secondary || '') + (outs[0].tertiary ? ' / ' + outs[0].tertiary : '') + '</div>';
+      const copy = 'Primary: ' + outs[0].primary + ' · Secondary: ' + outs[0].secondary + ' · Tertiary: ' + outs[0].tertiary;
+      html += '<button class="copy-btn" data-c="' + copy + '">Copy tags</button>';
+    }
+    html += '</div>';
+  }
+
+  result.innerHTML = html;
+
+  result.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(btn.dataset.c).then(() => {
+        btn.textContent = 'Copied ✓'; btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = 'Copy tags'; btn.classList.remove('ok'); }, 1600);
+      });
+    });
+  });
+}
+
+// Init: load stages
+(async () => {
+  try {
+    const stages = await get('/stages');
+    fillSelect(stageSel, stages, '— Select stage —');
+  } catch(e) {
+    stageSel.innerHTML = '<option>Error loading</option>';
+    result.innerHTML = '<div class="err">Could not reach API: ' + e.message + '</div>';
+  }
+})();
+
+stageSel.addEventListener('change', async () => {
+  setPlaceholder(stateSel, 'Loading…');
+  setPlaceholder(eventSel, '— Pick status first —');
+  result.innerHTML = '';
+  if (!stageSel.value) { setPlaceholder(stateSel, '— Pick stage first —'); return; }
+  try {
+    const states = await get('/states?stage=' + encodeURIComponent(stageSel.value));
+    fillSelect(stateSel, states, '— Select status —');
+  } catch(e) {
+    result.innerHTML = '<div class="err">' + e.message + '</div>';
+  }
+});
+
+stateSel.addEventListener('change', async () => {
+  setPlaceholder(eventSel, 'Loading…');
+  result.innerHTML = '';
+  if (!stateSel.value) { setPlaceholder(eventSel, '— Pick status first —'); return; }
+  try {
+    const events = await get('/events?stage=' + encodeURIComponent(stageSel.value) + '&state=' + encodeURIComponent(stateSel.value));
+    fillSelect(eventSel, events, '— Select event —');
+  } catch(e) {
+    result.innerHTML = '<div class="err">' + e.message + '</div>';
+  }
+});
+
+eventSel.addEventListener('change', async () => {
+  result.innerHTML = '<span class="spin"></span> Looking up…';
+  if (!eventSel.value) { result.innerHTML = ''; return; }
+  try {
+    const rules = await get('/lookup?stage=' + encodeURIComponent(stageSel.value) + '&state=' + encodeURIComponent(stateSel.value) + '&event=' + encodeURIComponent(eventSel.value));
+    renderRules(rules);
+  } catch(e) {
+    result.innerHTML = '<div class="err">' + e.message + '</div>';
+  }
+});
+</script>
