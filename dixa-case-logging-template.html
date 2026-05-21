@@ -1,0 +1,154 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.clg{font-family:system-ui,sans-serif;font-size:11.5px;color:#111;line-height:1.4}
+input[type=text]{width:100%;font-family:inherit;font-size:11px;color:#111;background:#fff;border:1px solid #d1d1ca;border-radius:4px;padding:5px 7px;margin-bottom:5px;outline:none}
+input[type=text]:focus{border-color:#9ca3af}
+select{width:100%;font-family:inherit;font-size:11px;color:#111;background:#fff;border:1px solid #d1d1ca;border-radius:4px;padding:5px 7px;margin-bottom:6px;cursor:pointer}
+.lbl{font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;display:block}
+.cnt{font-size:10px;color:#9ca3af;margin-bottom:8px}
+.ci{border:1px solid #e5e5e0;border-radius:4px;margin-bottom:5px;background:#fff;overflow:hidden}
+.ch{padding:5px 8px;cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.ch:hover{background:#f7f7f4}
+.ct{font-size:11px;font-weight:600;color:#111;flex:1;min-width:0;line-height:1.3}
+.cb{padding:6px 8px;border-top:1px solid #f3f4f6;display:none}
+.ci.open .cb{display:block}
+.cat{font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 5px;border-radius:3px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.cMNR{background:#fef3c7;color:#92400e}
+.cCOL{background:#fce7f3;color:#9d174d}
+.cOD{background:#dbeafe;color:#1e40af}
+.cLIT{background:#fee2e2;color:#991b1b}
+.cRTS{background:#d1fae5;color:#065f46}
+.cPS{background:#ede9fe;color:#5b21b6}
+.cRet{background:#ccfbf1;color:#115e59}
+.cCmp{background:#fed7aa;color:#9a3412}
+.cVM{background:#fbcfe8;color:#831843}
+.cPrc{background:#e0e7ff;color:#3730a3}
+.sect{margin-bottom:6px}
+.sect:last-child{margin-bottom:0}
+.sl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:3px}
+.sb{font-size:10.5px;color:#374151}
+.tr{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.tg{padding:2px 6px;border-radius:3px;font-size:9.5px;font-weight:600}
+.ti{background:#fee2e2;color:#991b1b}
+.tr2{background:#fef3c7;color:#92400e}
+.td{background:#dbeafe;color:#1e40af}
+.ar{color:#9ca3af;font-size:11px}
+.evs{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
+.ev{background:#f9fafb;border:1px solid #e5e7eb;color:#374151;padding:2px 6px;border-radius:3px;font-size:9.5px}
+.evh{background:#fef3c7;border-color:#f59e0b;color:#78350f;font-weight:600}
+.mc{background:#ecfccb;border:1px solid #bef264;color:#3f6212;padding:4px 7px;border-radius:4px;font-size:10px;margin-bottom:3px}
+.mc:last-child{margin-bottom:0}
+.mca{background:#fef9c3;border-color:#fde047;color:#713f12}
+.nt{background:#fffbeb;border-left:3px solid #f59e0b;padding:5px 8px;border-radius:3px;font-size:10px;color:#78350f}
+.pr{display:inline-block;background:#dbeafe;color:#1e40af;padding:3px 7px;border-radius:3px;font-size:10px;font-weight:600}
+.empty{font-size:11px;color:#9ca3af;text-align:center;padding:16px 8px}
+.err{font-size:11px;color:#dc2626;padding:6px 8px;background:#fef2f2;border-radius:4px}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid #e5e5e0;border-top-color:#6b7280;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.note{font-size:10px;color:#9ca3af;margin-top:8px;text-align:right}
+</style>
+
+<div class="clg">
+  <label class="lbl">Search</label>
+  <input type="text" id="clg-q" placeholder="event, macro, keyword…">
+  <label class="lbl">Category</label>
+  <select id="clg-cat">
+    <option value="">All categories</option>
+    <option>MNR</option>
+    <option>COLLECTIONS</option>
+    <option>Order Delay</option>
+    <option>PS Incident</option>
+    <option>Return to Sender</option>
+    <option>Returns</option>
+    <option>Lost in Transit</option>
+    <option>Vinted Mix-up</option>
+    <option>Customer Complaint</option>
+    <option>Process Guide</option>
+  </select>
+  <div id="clg-cnt" class="cnt"></div>
+  <div id="clg-list"></div>
+  <div class="note">33 scenarios · Case Logging Guide</div>
+</div>
+
+<script>
+const API = 'https://parcel-lookup-api.vercel.app/api';
+let debTimer;
+
+const CAT_CLS = {
+  'MNR':'cMNR','COLLECTIONS':'cCOL','Order Delay':'cOD',
+  'PS Incident':'cPS','Return to Sender':'cRTS','Returns':'cRet',
+  'Lost in Transit':'cLIT','Vinted Mix-up':'cVM',
+  'Customer Complaint':'cCmp','Process Guide':'cPrc'
+};
+
+function renderCase(c) {
+  const tags = '<span class="tg ti">' + c.issue + '</span>'
+    + '<span class="ar">→</span><span class="tg tr2">' + c.rootCause + '</span>'
+    + (c.detail ? '<span class="ar">→</span><span class="tg td">' + c.detail + '</span>' : '');
+
+  const evs = (c.keyEvents || []).map(e =>
+    '<span class="ev' + ((c.highlightEvents||[]).includes(e) ? ' evh' : '') + '">' + e + '</span>'
+  ).join('');
+
+  const mcs = (c.macros || []).map(m => '<div class="mc">' + m + '</div>').join('');
+  const altMcs = (c.altMacros || []).map(m => '<div class="mc mca">' + m + '</div>').join('');
+  const cls = CAT_CLS[c.category] || '';
+
+  return '<div class="ci" id="ci-' + c.id + '">'
+    + '<div class="ch" onclick="tog(' + c.id + ')">'
+    + '<div class="ct">' + c.title + '</div>'
+    + '<span class="cat ' + cls + '">' + c.category + '</span>'
+    + '</div>'
+    + '<div class="cb">'
+    + (c.context ? '<div class="sect"><div class="sl">When to use</div><div class="sb">' + c.context + '</div></div>' : '')
+    + '<div class="sect"><div class="sl">Log as</div><div class="tr">' + tags + '</div></div>'
+    + (evs ? '<div class="sect"><div class="sl">Key events</div><div class="evs">' + evs + '</div></div>' : '')
+    + ((mcs || altMcs) ? '<div class="sect"><div class="sl">Macro' + ((c.macros||[]).length + (c.altMacros||[]).length > 1 ? 's' : '') + '</div>' + mcs + altMcs + '</div>' : '')
+    + (c.process ? '<div class="sect"><div class="sl">Process</div><span class="pr">' + c.process + '</span></div>' : '')
+    + (c.notes ? '<div class="sect"><div class="sl">Notes</div><div class="nt">' + c.notes + '</div></div>' : '')
+    + '</div></div>';
+}
+
+function tog(id) {
+  document.getElementById('ci-' + id).classList.toggle('open');
+}
+
+async function search() {
+  const q = document.getElementById('clg-q').value.trim();
+  const cat = document.getElementById('clg-cat').value;
+  const list = document.getElementById('clg-list');
+  const cnt  = document.getElementById('clg-cnt');
+
+  list.innerHTML = '<span class="spin"></span>';
+
+  try {
+    let url = API + '/cases';
+    const p = [];
+    if (q)   p.push('q='        + encodeURIComponent(q));
+    if (cat) p.push('category=' + encodeURIComponent(cat));
+    if (p.length) url += '?' + p.join('&');
+
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const cases = await r.json();
+
+    cnt.textContent = cases.length + ' scenario' + (cases.length === 1 ? '' : 's') + (q || cat ? ' matching' : '');
+
+    if (!cases.length) {
+      list.innerHTML = '<div class="empty">No matches — try different keywords.</div>';
+      return;
+    }
+    list.innerHTML = cases.map(renderCase).join('');
+  } catch(e) {
+    list.innerHTML = '<div class="err">Error: ' + e.message + '</div>';
+  }
+}
+
+document.getElementById('clg-q').addEventListener('input', () => {
+  clearTimeout(debTimer);
+  debTimer = setTimeout(search, 300);
+});
+document.getElementById('clg-cat').addEventListener('change', search);
+
+search();
+</script>
